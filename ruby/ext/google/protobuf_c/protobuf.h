@@ -112,8 +112,10 @@ struct Descriptor {
   VALUE klass;  // begins as nil
   const upb_handlers* fill_handlers;
   const upb_pbdecodermethod* fill_method;
+  const upb_json_parsermethod* json_fill_method;
   const upb_handlers* pb_serialize_handlers;
   const upb_handlers* json_serialize_handlers;
+  const upb_handlers* json_serialize_handlers_preserve;
   // Handlers hold type class references for sub-message fields directly in some
   // cases. We need to keep these rooted because they might otherwise be
   // collected.
@@ -161,7 +163,10 @@ extern VALUE cOneofBuilderContext;
 extern VALUE cEnumBuilderContext;
 extern VALUE cBuilder;
 
-extern const char* kDescriptorInstanceVar;
+extern VALUE cError;
+extern VALUE cParseError;
+
+extern VALUE map_parse_frames;
 
 // We forward-declare all of the Ruby method implementations here because we
 // sometimes call the methods directly across .c files, rather than going
@@ -310,7 +315,7 @@ void native_slot_dup(upb_fieldtype_t type, void* to, void* from);
 void native_slot_deep_copy(upb_fieldtype_t type, void* to, void* from);
 bool native_slot_eq(upb_fieldtype_t type, void* mem1, void* mem2);
 
-void native_slot_validate_string_encoding(upb_fieldtype_t type, VALUE value);
+VALUE native_slot_encode_and_freeze_string(upb_fieldtype_t type, VALUE value);
 void native_slot_check_int_range_precision(upb_fieldtype_t type, VALUE value);
 
 extern rb_encoding* kRubyStringUtf8Encoding;
@@ -361,19 +366,21 @@ extern VALUE cRepeatedField;
 RepeatedField* ruby_to_RepeatedField(VALUE value);
 
 VALUE RepeatedField_each(VALUE _self);
-VALUE RepeatedField_index(VALUE _self, VALUE _index);
+VALUE RepeatedField_index(int argc, VALUE* argv, VALUE _self);
 void* RepeatedField_index_native(VALUE _self, int index);
+int RepeatedField_size(VALUE _self);
 VALUE RepeatedField_index_set(VALUE _self, VALUE _index, VALUE val);
 void RepeatedField_reserve(RepeatedField* self, int new_size);
 VALUE RepeatedField_push(VALUE _self, VALUE val);
 void RepeatedField_push_native(VALUE _self, void* data);
-VALUE RepeatedField_pop(VALUE _self);
+VALUE RepeatedField_pop_one(VALUE _self);
 VALUE RepeatedField_insert(int argc, VALUE* argv, VALUE _self);
 VALUE RepeatedField_replace(VALUE _self, VALUE list);
 VALUE RepeatedField_clear(VALUE _self);
 VALUE RepeatedField_length(VALUE _self);
 VALUE RepeatedField_dup(VALUE _self);
 VALUE RepeatedField_deep_copy(VALUE _self);
+VALUE RepeatedField_to_ary(VALUE _self);
 VALUE RepeatedField_eq(VALUE _self, VALUE _other);
 VALUE RepeatedField_hash(VALUE _self);
 VALUE RepeatedField_inspect(VALUE _self);
@@ -417,6 +424,7 @@ VALUE Map_dup(VALUE _self);
 VALUE Map_deep_copy(VALUE _self);
 VALUE Map_eq(VALUE _self, VALUE _other);
 VALUE Map_hash(VALUE _self);
+VALUE Map_to_h(VALUE _self);
 VALUE Map_inspect(VALUE _self);
 VALUE Map_merge(VALUE _self, VALUE hashmap);
 VALUE Map_merge_into_self(VALUE _self, VALUE hashmap);
@@ -489,18 +497,14 @@ VALUE Message_deep_copy(VALUE _self);
 VALUE Message_eq(VALUE _self, VALUE _other);
 VALUE Message_hash(VALUE _self);
 VALUE Message_inspect(VALUE _self);
+VALUE Message_to_h(VALUE _self);
 VALUE Message_index(VALUE _self, VALUE field_name);
 VALUE Message_index_set(VALUE _self, VALUE field_name, VALUE value);
 VALUE Message_descriptor(VALUE klass);
 VALUE Message_decode(VALUE klass, VALUE data);
 VALUE Message_encode(VALUE klass, VALUE msg_rb);
 VALUE Message_decode_json(VALUE klass, VALUE data);
-VALUE Message_encode_json(VALUE klass, VALUE msg_rb);
-
-VALUE Google_Protobuf_encode(VALUE self, VALUE msg_rb);
-VALUE Google_Protobuf_decode(VALUE self, VALUE klass, VALUE msg_rb);
-VALUE Google_Protobuf_encode_json(VALUE self, VALUE msg_rb);
-VALUE Google_Protobuf_decode_json(VALUE self, VALUE klass, VALUE msg_rb);
+VALUE Message_encode_json(int argc, VALUE* argv, VALUE klass);
 
 VALUE Google_Protobuf_deep_copy(VALUE self, VALUE obj);
 
@@ -510,6 +514,10 @@ VALUE enum_resolve(VALUE self, VALUE sym);
 
 const upb_pbdecodermethod *new_fillmsg_decodermethod(
     Descriptor* descriptor, const void *owner);
+
+// Maximum depth allowed during encoding, to avoid stack overflows due to
+// cycles.
+#define ENCODE_MAX_NESTING 63
 
 // -----------------------------------------------------------------------------
 // Global map from upb {msg,enum}defs to wrapper Descriptor/EnumDescriptor
@@ -529,5 +537,7 @@ void check_upb_status(const upb_status* status, const char* msg);
     code;                                                                     \
     check_upb_status(&status, msg);                                           \
 } while (0)
+
+extern ID descriptor_instancevar_interned;
 
 #endif  // __GOOGLE_PROTOBUF_RUBY_PROTOBUF_H__

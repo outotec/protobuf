@@ -35,6 +35,7 @@
 #include <map>
 #include <string>
 
+#include <google/protobuf/stubs/logging.h>
 #include <google/protobuf/stubs/common.h>
 #include <google/protobuf/compiler/java/java_context.h>
 #include <google/protobuf/compiler/java/java_doc_comment.h>
@@ -57,7 +58,7 @@ void SetEnumVariables(const FieldDescriptor* descriptor,
                       int builderBitIndex,
                       const FieldGeneratorInfo* info,
                       ClassNameResolver* name_resolver,
-                      map<string, string>* variables) {
+                      std::map<string, string>* variables) {
   SetCommonFieldVariables(descriptor, info, variables);
 
   (*variables)["type"] =
@@ -67,15 +68,20 @@ void SetEnumVariables(const FieldDescriptor* descriptor,
   (*variables)["default"] = ImmutableDefaultValue(descriptor, name_resolver);
   (*variables)["default_number"] = SimpleItoa(
       descriptor->default_value_enum()->number());
-  (*variables)["tag"] = SimpleItoa(internal::WireFormat::MakeTag(descriptor));
+  (*variables)["tag"] =
+      SimpleItoa(static_cast<int32>(internal::WireFormat::MakeTag(descriptor)));
   (*variables)["tag_size"] = SimpleItoa(
       internal::WireFormat::TagSize(descriptor->number(), GetType(descriptor)));
   // TODO(birdo): Add @deprecated javadoc when generating javadoc is supported
   // by the proto compiler
   (*variables)["deprecation"] = descriptor->options().deprecated()
       ? "@java.lang.Deprecated " : "";
-  (*variables)["on_changed"] =
-      HasDescriptorMethods(descriptor->containing_type()) ? "onChanged();" : "";
+  (*variables)["on_changed"] = "onChanged();";
+  // Use deprecated valueOf() method to be compatible with old generated code
+  // for v2.5.0/v2.6.1.
+  // TODO(xiaofeng): Use "forNumber" when we no longer support compatibility
+  // with v2.5.0/v2.6.1.
+  (*variables)["for_number"] = "valueOf";
 
   if (SupportFieldPresence(descriptor->file())) {
     // For singular messages and builders, one bit is used for the hasField bit.
@@ -191,7 +197,7 @@ GenerateMembers(io::Printer* printer) const {
   WriteFieldDocComment(printer, descriptor_);
   printer->Print(variables_,
     "$deprecation$public $type$ get$capitalized_name$() {\n"
-    "  $type$ result = $type$.valueOf($name$_);\n"
+    "  $type$ result = $type$.$for_number$($name$_);\n"
     "  return result == null ? $unknown$ : result;\n"
     "}\n");
 }
@@ -224,7 +230,7 @@ GenerateBuilderMembers(io::Printer* printer) const {
   WriteFieldDocComment(printer, descriptor_);
   printer->Print(variables_,
     "$deprecation$public $type$ get$capitalized_name$() {\n"
-    "  $type$ result = $type$.valueOf($name$_);\n"
+    "  $type$ result = $type$.$for_number$($name$_);\n"
     "  return result == null ? $unknown$ : result;\n"
     "}\n");
   WriteFieldDocComment(printer, descriptor_);
@@ -304,7 +310,7 @@ GenerateParsingCode(io::Printer* printer) const {
   } else {
     printer->Print(variables_,
       "int rawValue = input.readEnum();\n"
-      "$type$ value = $type$.valueOf(rawValue);\n"
+      "$type$ value = $type$.$for_number$(rawValue);\n"
       "if (value == null) {\n");
     if (PreserveUnknownFields(descriptor_->containing_type())) {
       printer->Print(variables_,
@@ -398,7 +404,8 @@ GenerateMembers(io::Printer* printer) const {
   printer->Print(variables_,
     "$deprecation$public $type$ get$capitalized_name$() {\n"
     "  if ($has_oneof_case_message$) {\n"
-    "    $type$ result =  $type$.valueOf((java.lang.Integer) $oneof_name$_);\n"
+    "    $type$ result = $type$.$for_number$(\n"
+    "        (java.lang.Integer) $oneof_name$_);\n"
     "    return result == null ? $unknown$ : result;\n"
     "  }\n"
     "  return $default$;\n"
@@ -436,7 +443,8 @@ GenerateBuilderMembers(io::Printer* printer) const {
   printer->Print(variables_,
     "$deprecation$public $type$ get$capitalized_name$() {\n"
     "  if ($has_oneof_case_message$) {\n"
-    "    $type$ result =  $type$.valueOf((java.lang.Integer) $oneof_name$_);\n"
+    "    $type$ result = $type$.$for_number$(\n"
+    "        (java.lang.Integer) $oneof_name$_);\n"
     "    return result == null ? $unknown$ : result;\n"
     "  }\n"
     "  return $default$;\n"
@@ -493,7 +501,7 @@ GenerateParsingCode(io::Printer* printer) const {
   } else {
     printer->Print(variables_,
       "int rawValue = input.readEnum();\n"
-      "$type$ value = $type$.valueOf(rawValue);\n"
+      "$type$ value = $type$.$for_number$(rawValue);\n"
       "if (value == null) {\n");
     if (PreserveUnknownFields(descriptor_->containing_type())) {
       printer->Print(variables_,
@@ -606,7 +614,7 @@ GenerateMembers(io::Printer* printer) const {
     "        new com.google.protobuf.Internal.ListAdapter.Converter<\n"
     "            java.lang.Integer, $type$>() {\n"
     "          public $type$ convert(java.lang.Integer from) {\n"
-    "            $type$ result = $type$.valueOf(from);\n"
+    "            $type$ result = $type$.$for_number$(from);\n"
     "            return result == null ? $unknown$ : result;\n"
     "          }\n"
     "        };\n");
@@ -641,8 +649,8 @@ GenerateMembers(io::Printer* printer) const {
       "}\n");
   }
 
-  if (descriptor_->options().packed() &&
-      HasGeneratedMethods(descriptor_->containing_type())) {
+  if (descriptor_->is_packed() &&
+      context_->HasGeneratedMethods(descriptor_->containing_type())) {
     printer->Print(variables_,
       "private int $name$MemoizedSerializedSize;\n");
   }
@@ -839,7 +847,7 @@ GenerateParsingCode(io::Printer* printer) const {
   } else {
     printer->Print(variables_,
       "int rawValue = input.readEnum();\n"
-      "$type$ value = $type$.valueOf(rawValue);\n"
+      "$type$ value = $type$.$for_number$(rawValue);\n"
         "if (value == null) {\n");
     if (PreserveUnknownFields(descriptor_->containing_type())) {
       printer->Print(variables_,
@@ -884,11 +892,11 @@ GenerateParsingDoneCode(io::Printer* printer) const {
 
 void RepeatedImmutableEnumFieldGenerator::
 GenerateSerializationCode(io::Printer* printer) const {
-  if (descriptor_->options().packed()) {
+  if (descriptor_->is_packed()) {
     printer->Print(variables_,
       "if (get$capitalized_name$List().size() > 0) {\n"
-      "  output.writeRawVarint32($tag$);\n"
-      "  output.writeRawVarint32($name$MemoizedSerializedSize);\n"
+      "  output.writeUInt32NoTag($tag$);\n"
+      "  output.writeUInt32NoTag($name$MemoizedSerializedSize);\n"
       "}\n"
       "for (int i = 0; i < $name$_.size(); i++) {\n"
       "  output.writeEnumNoTag($name$_.get(i));\n"
@@ -915,12 +923,12 @@ GenerateSerializedSizeCode(io::Printer* printer) const {
     "}\n");
   printer->Print(
     "size += dataSize;\n");
-  if (descriptor_->options().packed()) {
+  if (descriptor_->is_packed()) {
     printer->Print(variables_,
       "if (!get$capitalized_name$List().isEmpty()) {"
       "  size += $tag_size$;\n"
       "  size += com.google.protobuf.CodedOutputStream\n"
-      "    .computeRawVarint32Size(dataSize);\n"
+      "    .computeUInt32SizeNoTag(dataSize);\n"
       "}");
   } else {
     printer->Print(variables_,
@@ -928,7 +936,7 @@ GenerateSerializedSizeCode(io::Printer* printer) const {
   }
 
   // cache the data size for packed fields.
-  if (descriptor_->options().packed()) {
+  if (descriptor_->is_packed()) {
     printer->Print(variables_,
       "$name$MemoizedSerializedSize = dataSize;\n");
   }

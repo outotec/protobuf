@@ -154,6 +154,14 @@ string UnderscoresToCamelCase(const MethodDescriptor* method) {
   return UnderscoresToCamelCaseImpl(method->name(), false);
 }
 
+string UnderscoresToCamelCase(const OneofDescriptor* oneof) {
+  return UnderscoresToCamelCaseImpl(oneof->name(), false);
+}
+
+string UnderscoresToCapitalizedCamelCase(const OneofDescriptor* oneof) {
+  return UnderscoresToCamelCaseImpl(oneof->name(), true);
+}
+
 string RenameJavaKeywords(const string& input) {
   return sRenameKeywords.RenameJavaKeywordsImpl(input);
 }
@@ -192,6 +200,12 @@ string FileJavaPackage(const Params& params, const FileDescriptor* file) {
       if (!result.empty()) result += '.';
       result += file->package();
     }
+
+    if (!result.empty()) {
+      result += ".";
+    }
+    result += "nano";
+
     return result;
   }
 }
@@ -414,9 +428,9 @@ string DefaultValue(const Params& params, const FieldDescriptor* field) {
              "L";
     case FieldDescriptor::CPPTYPE_DOUBLE: {
       double value = field->default_value_double();
-      if (value == numeric_limits<double>::infinity()) {
+      if (value == std::numeric_limits<double>::infinity()) {
         return "Double.POSITIVE_INFINITY";
-      } else if (value == -numeric_limits<double>::infinity()) {
+      } else if (value == -std::numeric_limits<double>::infinity()) {
         return "Double.NEGATIVE_INFINITY";
       } else if (value != value) {
         return "Double.NaN";
@@ -426,9 +440,9 @@ string DefaultValue(const Params& params, const FieldDescriptor* field) {
     }
     case FieldDescriptor::CPPTYPE_FLOAT: {
       float value = field->default_value_float();
-      if (value == numeric_limits<float>::infinity()) {
+      if (value == std::numeric_limits<float>::infinity()) {
         return "Float.POSITIVE_INFINITY";
-      } else if (value == -numeric_limits<float>::infinity()) {
+      } else if (value == -std::numeric_limits<float>::infinity()) {
         return "Float.NEGATIVE_INFINITY";
       } else if (value != value) {
         return "Float.NaN";
@@ -558,6 +572,17 @@ void SetBitOperationVariables(const string name,
   (*variables)["set_" + name] = GenerateSetBit(bitIndex);
   (*variables)["clear_" + name] = GenerateClearBit(bitIndex);
   (*variables)["different_" + name] = GenerateDifferentBit(bitIndex);
+}
+
+bool HasMapField(const Descriptor* descriptor) {
+  for (int i = 0; i < descriptor->field_count(); ++i) {
+    const FieldDescriptor* field = descriptor->field(i);
+    if (field->type() == FieldDescriptor::TYPE_MESSAGE &&
+        IsMapEntry(field->message_type())) {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace javanano
