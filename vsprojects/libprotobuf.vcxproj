@@ -301,7 +301,6 @@
     <ClCompile Include="..\src\google\protobuf\any.cc" />
     <ClCompile Include="..\src\google\protobuf\any.pb.cc" />
     <ClCompile Include="..\src\google\protobuf\arena.cc" />
-    <ClCompile Include="..\src\google\protobuf\arenastring.cc" />
     <ClCompile Include="..\src\google\protobuf\compiler\importer.cc" />
     <ClCompile Include="..\src\google\protobuf\compiler\parser.cc" />
     <ClCompile Include="..\src\google\protobuf\descriptor.cc" />
