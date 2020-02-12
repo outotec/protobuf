@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="DebugDynamicRuntime|Win32">
       <Configuration>DebugDynamicRuntime</Configuration>
@@ -41,35 +41,35 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDynamicRuntime|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseStaticRuntime|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDynamicRuntime|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseStaticRuntime|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDynamicRuntime|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugStaticRuntime|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugDynamicRuntime|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DebugStaticRuntime|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <PlatformToolset>v120</PlatformToolset>
+    <PlatformToolset>v140</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -160,6 +160,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>$(OutDir)libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugStaticRuntime|Win32'">
@@ -180,6 +181,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>$(OutDir)libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugDynamicRuntime|x64'">
@@ -198,6 +200,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>$(OutDir)libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='DebugStaticRuntime|x64'">
@@ -216,6 +219,7 @@
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>$(OutDir)libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDynamicRuntime|Win32'">
@@ -235,6 +239,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>$(OutDir)libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseStaticRuntime|Win32'">
@@ -254,6 +259,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <TargetMachine>MachineX86</TargetMachine>
+      <AdditionalDependencies>$(OutDir)libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDynamicRuntime|x64'">
@@ -272,6 +278,7 @@
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalDependencies>$(OutDir)libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseStaticRuntime|x64'">
@@ -290,10 +297,106 @@
       <SubSystem>Console</SubSystem>
       <OptimizeReferences>true</OptimizeReferences>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <AdditionalDependencies>$(OutDir)libprotobuf.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\google\protobuf\compiler\code_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\command_line_interface.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_enum.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_enum_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_extension.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_file.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_helpers.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_map_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_message.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_message_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_primitive_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_service.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\cpp\cpp_string_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_doc_comment.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_enum.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_enum_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_field_base.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_helpers.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_map_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_message.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_message_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_primitive_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_reflection_class.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_repeated_enum_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_repeated_message_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_repeated_primitive_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_source_generator_base.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\csharp\csharp_wrapper_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\importer.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\javanano\javanano_enum.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\javanano\javanano_enum_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\javanano\javanano_extension.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\javanano\javanano_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\javanano\javanano_file.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\javanano\javanano_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\javanano\javanano_helpers.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\javanano\javanano_map_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\javanano\javanano_message.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\javanano\javanano_message_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\javanano\javanano_primitive_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_context.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_doc_comment.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_enum.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_enum_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_enum_field_lite.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_enum_lite.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_extension.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_extension_lite.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_file.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_generator_factory.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_helpers.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_lazy_message_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_lazy_message_field_lite.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_map_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_map_field_lite.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_message.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_message_builder.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_message_builder_lite.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_message_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_message_field_lite.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_message_lite.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_name_resolver.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_primitive_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_primitive_field_lite.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_service.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_shared_code_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_string_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\java\java_string_field_lite.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\js\js_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\js\well_known_types.cc" />
     <ClCompile Include="..\src\google\protobuf\compiler\main.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_enum.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_enum_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_extension.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_file.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_helpers.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_map_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_message.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_message_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_oneof.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\objectivec\objectivec_primitive_field.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\parser.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\php\php_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\plugin.pb.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\profile.pb.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\python\python_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\ruby\ruby_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\subprocess.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\zip_writer.cc" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="libprotobuf.vcxproj">

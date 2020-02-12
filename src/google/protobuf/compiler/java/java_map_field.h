@@ -67,11 +67,9 @@ class ImmutableMapFieldGenerator : public ImmutableFieldGenerator {
 
  private:
   const FieldDescriptor* descriptor_;
-  map<string, string> variables_;
-  const int messageBitIndex_;
-  const int builderBitIndex_;
-  Context* context_;
+  std::map<string, string> variables_;
   ClassNameResolver* name_resolver_;
+  void GenerateMapGetters(io::Printer* printer) const;
 };
 
 }  // namespace java

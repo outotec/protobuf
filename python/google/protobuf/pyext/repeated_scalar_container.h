@@ -48,7 +48,11 @@ namespace protobuf {
 
 class Message;
 
+#ifdef _SHARED_PTR_H
+using std::shared_ptr;
+#else
 using internal::shared_ptr;
+#endif
 
 namespace python {
 
@@ -77,7 +81,7 @@ typedef struct RepeatedScalarContainer {
   // field.  Used together with the parent's message when making a
   // default message instance mutable.
   // The pointer is owned by the global DescriptorPool.
-  const google::protobuf::FieldDescriptor* parent_field_descriptor;
+  const FieldDescriptor* parent_field_descriptor;
 } RepeatedScalarContainer;
 
 extern PyTypeObject RepeatedScalarContainer_Type;
@@ -87,7 +91,7 @@ namespace repeated_scalar_container {
 // Builds a RepeatedScalarContainer object, from a parent message and a
 // field descriptor.
 extern PyObject *NewContainer(
-    CMessage* parent, const google::protobuf::FieldDescriptor* parent_field_descriptor);
+    CMessage* parent, const FieldDescriptor* parent_field_descriptor);
 
 // Appends the scalar 'item' to the end of the container 'self'.
 //

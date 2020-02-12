@@ -39,10 +39,12 @@
 #endif
 
 #include <google/protobuf/stubs/common.h>
+#include <google/protobuf/stubs/logging.h>
 #include <google/protobuf/descriptor.h>
 #include <google/protobuf/dynamic_message.h>
 #include <google/protobuf/message.h>
 #include <google/protobuf/pyext/descriptor.h>
+#include <google/protobuf/pyext/descriptor_pool.h>
 #include <google/protobuf/pyext/message.h>
 #include <google/protobuf/pyext/scoped_pyobject_ptr.h>
 
@@ -60,8 +62,6 @@ namespace google {
 namespace protobuf {
 namespace python {
 
-extern google::protobuf::DynamicMessageFactory* global_message_factory;
-
 namespace repeated_scalar_container {
 
 static int InternalAssignRepeatedField(
@@ -70,7 +70,7 @@ static int InternalAssignRepeatedField(
                                              self->parent_field_descriptor);
   for (Py_ssize_t i = 0; i < PyList_GET_SIZE(list); ++i) {
     PyObject* value = PyList_GET_ITEM(list, i);
-    if (Append(self, value) == NULL) {
+    if (ScopedPyObjectPtr(Append(self, value)) == NULL) {
       return -1;
     }
   }
@@ -78,7 +78,7 @@ static int InternalAssignRepeatedField(
 }
 
 static Py_ssize_t Len(RepeatedScalarContainer* self) {
-  google::protobuf::Message* message = self->message;
+  Message* message = self->message;
   return message->GetReflection()->FieldSize(*message,
                                              self->parent_field_descriptor);
 }
@@ -87,11 +87,10 @@ static int AssignItem(RepeatedScalarContainer* self,
                       Py_ssize_t index,
                       PyObject* arg) {
   cmessage::AssureWritable(self->parent);
-  google::protobuf::Message* message = self->message;
-  const google::protobuf::FieldDescriptor* field_descriptor =
-      self->parent_field_descriptor;
+  Message* message = self->message;
+  const FieldDescriptor* field_descriptor = self->parent_field_descriptor;
 
-  const google::protobuf::Reflection* reflection = message->GetReflection();
+  const Reflection* reflection = message->GetReflection();
   int field_size = reflection->FieldSize(*message, field_descriptor);
   if (index < 0) {
     index = field_size + index;
@@ -105,8 +104,8 @@ static int AssignItem(RepeatedScalarContainer* self,
 
   if (arg == NULL) {
     ScopedPyObjectPtr py_index(PyLong_FromLong(index));
-    return cmessage::InternalDeleteRepeatedField(message, field_descriptor,
-                                                 py_index, NULL);
+    return cmessage::InternalDeleteRepeatedField(self->parent, field_descriptor,
+                                                 py_index.get(), NULL);
   }
 
   if (PySequence_Check(arg) && !(PyBytes_Check(arg) || PyUnicode_Check(arg))) {
@@ -115,64 +114,68 @@ static int AssignItem(RepeatedScalarContainer* self,
   }
 
   switch (field_descriptor->cpp_type()) {
-    case google::protobuf::FieldDescriptor::CPPTYPE_INT32: {
+    case FieldDescriptor::CPPTYPE_INT32: {
       GOOGLE_CHECK_GET_INT32(arg, value, -1);
       reflection->SetRepeatedInt32(message, field_descriptor, index, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_INT64: {
+    case FieldDescriptor::CPPTYPE_INT64: {
       GOOGLE_CHECK_GET_INT64(arg, value, -1);
       reflection->SetRepeatedInt64(message, field_descriptor, index, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32: {
+    case FieldDescriptor::CPPTYPE_UINT32: {
       GOOGLE_CHECK_GET_UINT32(arg, value, -1);
       reflection->SetRepeatedUInt32(message, field_descriptor, index, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64: {
+    case FieldDescriptor::CPPTYPE_UINT64: {
       GOOGLE_CHECK_GET_UINT64(arg, value, -1);
       reflection->SetRepeatedUInt64(message, field_descriptor, index, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT: {
+    case FieldDescriptor::CPPTYPE_FLOAT: {
       GOOGLE_CHECK_GET_FLOAT(arg, value, -1);
       reflection->SetRepeatedFloat(message, field_descriptor, index, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE: {
+    case FieldDescriptor::CPPTYPE_DOUBLE: {
       GOOGLE_CHECK_GET_DOUBLE(arg, value, -1);
       reflection->SetRepeatedDouble(message, field_descriptor, index, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL: {
+    case FieldDescriptor::CPPTYPE_BOOL: {
       GOOGLE_CHECK_GET_BOOL(arg, value, -1);
       reflection->SetRepeatedBool(message, field_descriptor, index, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_STRING: {
+    case FieldDescriptor::CPPTYPE_STRING: {
       if (!CheckAndSetString(
           arg, message, field_descriptor, reflection, false, index)) {
         return -1;
       }
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM: {
+    case FieldDescriptor::CPPTYPE_ENUM: {
       GOOGLE_CHECK_GET_INT32(arg, value, -1);
-      const google::protobuf::EnumDescriptor* enum_descriptor =
-          field_descriptor->enum_type();
-      const google::protobuf::EnumValueDescriptor* enum_value =
-          enum_descriptor->FindValueByNumber(value);
-      if (enum_value != NULL) {
-        reflection->SetRepeatedEnum(message, field_descriptor, index,
-                                    enum_value);
+      if (reflection->SupportsUnknownEnumValues()) {
+        reflection->SetRepeatedEnumValue(message, field_descriptor, index,
+                                         value);
       } else {
-        ScopedPyObjectPtr s(PyObject_Str(arg));
-        if (s != NULL) {
-          PyErr_Format(PyExc_ValueError, "Unknown enum value: %s",
-                       PyString_AsString(s));
+        const EnumDescriptor* enum_descriptor = field_descriptor->enum_type();
+        const EnumValueDescriptor* enum_value =
+            enum_descriptor->FindValueByNumber(value);
+        if (enum_value != NULL) {
+          reflection->SetRepeatedEnum(message, field_descriptor, index,
+                                      enum_value);
+        } else {
+          ScopedPyObjectPtr s(PyObject_Str(arg));
+          if (s != NULL) {
+            PyErr_Format(PyExc_ValueError, "Unknown enum value: %s",
+                         PyString_AsString(s.get()));
+          }
+          return -1;
         }
-        return -1;
       }
       break;
     }
@@ -186,10 +189,9 @@ static int AssignItem(RepeatedScalarContainer* self,
 }
 
 static PyObject* Item(RepeatedScalarContainer* self, Py_ssize_t index) {
-  google::protobuf::Message* message = self->message;
-  const google::protobuf::FieldDescriptor* field_descriptor =
-      self->parent_field_descriptor;
-  const google::protobuf::Reflection* reflection = message->GetReflection();
+  Message* message = self->message;
+  const FieldDescriptor* field_descriptor = self->parent_field_descriptor;
+  const Reflection* reflection = message->GetReflection();
 
   int field_size = reflection->FieldSize(*message, field_descriptor);
   if (index < 0) {
@@ -197,80 +199,80 @@ static PyObject* Item(RepeatedScalarContainer* self, Py_ssize_t index) {
   }
   if (index < 0 || index >= field_size) {
     PyErr_Format(PyExc_IndexError,
-                 "list assignment index (%d) out of range",
-                 static_cast<int>(index));
+                 "list index (%zd) out of range",
+                 index);
     return NULL;
   }
 
   PyObject* result = NULL;
   switch (field_descriptor->cpp_type()) {
-    case google::protobuf::FieldDescriptor::CPPTYPE_INT32: {
+    case FieldDescriptor::CPPTYPE_INT32: {
       int32 value = reflection->GetRepeatedInt32(
           *message, field_descriptor, index);
       result = PyInt_FromLong(value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_INT64: {
+    case FieldDescriptor::CPPTYPE_INT64: {
       int64 value = reflection->GetRepeatedInt64(
           *message, field_descriptor, index);
       result = PyLong_FromLongLong(value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32: {
+    case FieldDescriptor::CPPTYPE_UINT32: {
       uint32 value = reflection->GetRepeatedUInt32(
           *message, field_descriptor, index);
       result = PyLong_FromLongLong(value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64: {
+    case FieldDescriptor::CPPTYPE_UINT64: {
       uint64 value = reflection->GetRepeatedUInt64(
           *message, field_descriptor, index);
       result = PyLong_FromUnsignedLongLong(value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT: {
+    case FieldDescriptor::CPPTYPE_FLOAT: {
       float value = reflection->GetRepeatedFloat(
           *message, field_descriptor, index);
       result = PyFloat_FromDouble(value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE: {
+    case FieldDescriptor::CPPTYPE_DOUBLE: {
       double value = reflection->GetRepeatedDouble(
           *message, field_descriptor, index);
       result = PyFloat_FromDouble(value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL: {
+    case FieldDescriptor::CPPTYPE_BOOL: {
       bool value = reflection->GetRepeatedBool(
           *message, field_descriptor, index);
       result = PyBool_FromLong(value ? 1 : 0);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM: {
-      const google::protobuf::EnumValueDescriptor* enum_value =
+    case FieldDescriptor::CPPTYPE_ENUM: {
+      const EnumValueDescriptor* enum_value =
           message->GetReflection()->GetRepeatedEnum(
               *message, field_descriptor, index);
       result = PyInt_FromLong(enum_value->number());
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_STRING: {
+    case FieldDescriptor::CPPTYPE_STRING: {
       string value = reflection->GetRepeatedString(
           *message, field_descriptor, index);
       result = ToStringObject(field_descriptor, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_MESSAGE: {
+    case FieldDescriptor::CPPTYPE_MESSAGE: {
       PyObject* py_cmsg = PyObject_CallObject(reinterpret_cast<PyObject*>(
           &CMessage_Type), NULL);
       if (py_cmsg == NULL) {
         return NULL;
       }
       CMessage* cmsg = reinterpret_cast<CMessage*>(py_cmsg);
-      const google::protobuf::Message& msg = reflection->GetRepeatedMessage(
+      const Message& msg = reflection->GetRepeatedMessage(
           *message, field_descriptor, index);
       cmsg->owner = self->owner;
       cmsg->parent = self->parent;
-      cmsg->message = const_cast<google::protobuf::Message*>(&msg);
+      cmsg->message = const_cast<Message*>(&msg);
       cmsg->read_only = false;
       result = reinterpret_cast<PyObject*>(py_cmsg);
       break;
@@ -332,7 +334,7 @@ static PyObject* Subscript(RepeatedScalarContainer* self, PyObject* slice) {
         break;
       }
       ScopedPyObjectPtr s(Item(self, index));
-      PyList_Append(list, s);
+      PyList_Append(list, s.get());
     }
   } else {
     if (step > 0) {
@@ -343,7 +345,7 @@ static PyObject* Subscript(RepeatedScalarContainer* self, PyObject* slice) {
         break;
       }
       ScopedPyObjectPtr s(Item(self, index));
-      PyList_Append(list, s);
+      PyList_Append(list, s.get());
     }
   }
   return list;
@@ -351,69 +353,71 @@ static PyObject* Subscript(RepeatedScalarContainer* self, PyObject* slice) {
 
 PyObject* Append(RepeatedScalarContainer* self, PyObject* item) {
   cmessage::AssureWritable(self->parent);
-  google::protobuf::Message* message = self->message;
-  const google::protobuf::FieldDescriptor* field_descriptor =
-      self->parent_field_descriptor;
+  Message* message = self->message;
+  const FieldDescriptor* field_descriptor = self->parent_field_descriptor;
 
-  const google::protobuf::Reflection* reflection = message->GetReflection();
+  const Reflection* reflection = message->GetReflection();
   switch (field_descriptor->cpp_type()) {
-    case google::protobuf::FieldDescriptor::CPPTYPE_INT32: {
+    case FieldDescriptor::CPPTYPE_INT32: {
       GOOGLE_CHECK_GET_INT32(item, value, NULL);
       reflection->AddInt32(message, field_descriptor, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_INT64: {
+    case FieldDescriptor::CPPTYPE_INT64: {
       GOOGLE_CHECK_GET_INT64(item, value, NULL);
       reflection->AddInt64(message, field_descriptor, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_UINT32: {
+    case FieldDescriptor::CPPTYPE_UINT32: {
       GOOGLE_CHECK_GET_UINT32(item, value, NULL);
       reflection->AddUInt32(message, field_descriptor, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_UINT64: {
+    case FieldDescriptor::CPPTYPE_UINT64: {
       GOOGLE_CHECK_GET_UINT64(item, value, NULL);
       reflection->AddUInt64(message, field_descriptor, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_FLOAT: {
+    case FieldDescriptor::CPPTYPE_FLOAT: {
       GOOGLE_CHECK_GET_FLOAT(item, value, NULL);
       reflection->AddFloat(message, field_descriptor, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_DOUBLE: {
+    case FieldDescriptor::CPPTYPE_DOUBLE: {
       GOOGLE_CHECK_GET_DOUBLE(item, value, NULL);
       reflection->AddDouble(message, field_descriptor, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_BOOL: {
+    case FieldDescriptor::CPPTYPE_BOOL: {
       GOOGLE_CHECK_GET_BOOL(item, value, NULL);
       reflection->AddBool(message, field_descriptor, value);
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_STRING: {
+    case FieldDescriptor::CPPTYPE_STRING: {
       if (!CheckAndSetString(
           item, message, field_descriptor, reflection, true, -1)) {
         return NULL;
       }
       break;
     }
-    case google::protobuf::FieldDescriptor::CPPTYPE_ENUM: {
+    case FieldDescriptor::CPPTYPE_ENUM: {
       GOOGLE_CHECK_GET_INT32(item, value, NULL);
-      const google::protobuf::EnumDescriptor* enum_descriptor =
-          field_descriptor->enum_type();
-      const google::protobuf::EnumValueDescriptor* enum_value =
-          enum_descriptor->FindValueByNumber(value);
-      if (enum_value != NULL) {
-        reflection->AddEnum(message, field_descriptor, enum_value);
+      if (reflection->SupportsUnknownEnumValues()) {
+        reflection->AddEnumValue(message, field_descriptor, value);
       } else {
-        ScopedPyObjectPtr s(PyObject_Str(item));
-        if (s != NULL) {
-          PyErr_Format(PyExc_ValueError, "Unknown enum value: %s",
-                       PyString_AsString(s));
+        const EnumDescriptor* enum_descriptor = field_descriptor->enum_type();
+        const EnumValueDescriptor* enum_value =
+            enum_descriptor->FindValueByNumber(value);
+        if (enum_value != NULL) {
+          reflection->AddEnum(message, field_descriptor, enum_value);
+        } else {
+          ScopedPyObjectPtr s(PyObject_Str(item));
+          if (s != NULL) {
+            PyErr_Format(PyExc_ValueError, "Unknown enum value: %s",
+                         PyString_AsString(s.get()));
+          }
+          return NULL;
         }
-        return NULL;
       }
       break;
     }
@@ -438,8 +442,8 @@ static int AssSubscript(RepeatedScalarContainer* self,
   bool create_list = false;
 
   cmessage::AssureWritable(self->parent);
-  google::protobuf::Message* message = self->message;
-  const google::protobuf::FieldDescriptor* field_descriptor =
+  Message* message = self->message;
+  const FieldDescriptor* field_descriptor =
       self->parent_field_descriptor;
 
 #if PY_MAJOR_VERSION < 3
@@ -450,7 +454,7 @@ static int AssSubscript(RepeatedScalarContainer* self,
   if (PyLong_Check(slice)) {
     from = to = PyLong_AsLong(slice);
   } else if (PySlice_Check(slice)) {
-    const google::protobuf::Reflection* reflection = message->GetReflection();
+    const Reflection* reflection = message->GetReflection();
     length = reflection->FieldSize(*message, field_descriptor);
 #if PY_MAJOR_VERSION >= 3
     if (PySlice_GetIndicesEx(slice,
@@ -468,7 +472,7 @@ static int AssSubscript(RepeatedScalarContainer* self,
 
   if (value == NULL) {
     return cmessage::InternalDeleteRepeatedField(
-        message, field_descriptor, slice, NULL);
+        self->parent, field_descriptor, slice, NULL);
   }
 
   if (!create_list) {
@@ -479,30 +483,36 @@ static int AssSubscript(RepeatedScalarContainer* self,
   if (full_slice == NULL) {
     return -1;
   }
-  ScopedPyObjectPtr new_list(Subscript(self, full_slice));
+  ScopedPyObjectPtr new_list(Subscript(self, full_slice.get()));
   if (new_list == NULL) {
     return -1;
   }
-  if (PySequence_SetSlice(new_list, from, to, value) < 0) {
+  if (PySequence_SetSlice(new_list.get(), from, to, value) < 0) {
     return -1;
   }
 
-  return InternalAssignRepeatedField(self, new_list);
+  return InternalAssignRepeatedField(self, new_list.get());
 }
 
 PyObject* Extend(RepeatedScalarContainer* self, PyObject* value) {
   cmessage::AssureWritable(self->parent);
-  if (PyObject_Not(value)) {
+
+  // TODO(ptucker): Deprecate this behavior. b/18413862
+  if (value == Py_None) {
     Py_RETURN_NONE;
   }
+  if ((Py_TYPE(value)->tp_as_sequence == NULL) && PyObject_Not(value)) {
+    Py_RETURN_NONE;
+  }
+
   ScopedPyObjectPtr iter(PyObject_GetIter(value));
   if (iter == NULL) {
     PyErr_SetString(PyExc_TypeError, "Value must be iterable");
     return NULL;
   }
   ScopedPyObjectPtr next;
-  while ((next.reset(PyIter_Next(iter))) != NULL) {
-    if (Append(self, next) == NULL) {
+  while ((next.reset(PyIter_Next(iter.get()))) != NULL) {
+    if (ScopedPyObjectPtr(Append(self, next.get())) == NULL) {
       return NULL;
     }
   }
@@ -519,11 +529,11 @@ static PyObject* Insert(RepeatedScalarContainer* self, PyObject* args) {
     return NULL;
   }
   ScopedPyObjectPtr full_slice(PySlice_New(NULL, NULL, NULL));
-  ScopedPyObjectPtr new_list(Subscript(self, full_slice));
-  if (PyList_Insert(new_list, index, value) < 0) {
+  ScopedPyObjectPtr new_list(Subscript(self, full_slice.get()));
+  if (PyList_Insert(new_list.get(), index, value) < 0) {
     return NULL;
   }
-  int ret = InternalAssignRepeatedField(self, new_list);
+  int ret = InternalAssignRepeatedField(self, new_list.get());
   if (ret < 0) {
     return NULL;
   }
@@ -534,7 +544,7 @@ static PyObject* Remove(RepeatedScalarContainer* self, PyObject* value) {
   Py_ssize_t match_index = -1;
   for (Py_ssize_t i = 0; i < Len(self); ++i) {
     ScopedPyObjectPtr elem(Item(self, i));
-    if (PyObject_RichCompareBool(elem, value, Py_EQ)) {
+    if (PyObject_RichCompareBool(elem.get(), value, Py_EQ)) {
       match_index = i;
       break;
     }
@@ -569,15 +579,15 @@ static PyObject* RichCompare(RepeatedScalarContainer* self,
   ScopedPyObjectPtr other_list_deleter;
   if (PyObject_TypeCheck(other, &RepeatedScalarContainer_Type)) {
     other_list_deleter.reset(Subscript(
-        reinterpret_cast<RepeatedScalarContainer*>(other), full_slice));
+        reinterpret_cast<RepeatedScalarContainer*>(other), full_slice.get()));
     other = other_list_deleter.get();
   }
 
-  ScopedPyObjectPtr list(Subscript(self, full_slice));
+  ScopedPyObjectPtr list(Subscript(self, full_slice.get()));
   if (list == NULL) {
     return NULL;
   }
-  return PyObject_RichCompare(list, other, opid);
+  return PyObject_RichCompare(list.get(), other, opid);
 }
 
 PyObject* Reduce(RepeatedScalarContainer* unused_self) {
@@ -608,28 +618,47 @@ static PyObject* Sort(RepeatedScalarContainer* self,
   if (full_slice == NULL) {
     return NULL;
   }
-  ScopedPyObjectPtr list(Subscript(self, full_slice));
+  ScopedPyObjectPtr list(Subscript(self, full_slice.get()));
   if (list == NULL) {
     return NULL;
   }
-  ScopedPyObjectPtr m(PyObject_GetAttrString(list, "sort"));
+  ScopedPyObjectPtr m(PyObject_GetAttrString(list.get(), "sort"));
   if (m == NULL) {
     return NULL;
   }
-  ScopedPyObjectPtr res(PyObject_Call(m, args, kwds));
+  ScopedPyObjectPtr res(PyObject_Call(m.get(), args, kwds));
   if (res == NULL) {
     return NULL;
   }
-  int ret = InternalAssignRepeatedField(self, list);
+  int ret = InternalAssignRepeatedField(self, list.get());
   if (ret < 0) {
     return NULL;
   }
   Py_RETURN_NONE;
 }
 
+static PyObject* Pop(RepeatedScalarContainer* self,
+                     PyObject* args) {
+  Py_ssize_t index = -1;
+  if (!PyArg_ParseTuple(args, "|n", &index)) {
+    return NULL;
+  }
+  PyObject* item = Item(self, index);
+  if (item == NULL) {
+    PyErr_Format(PyExc_IndexError,
+                 "list index (%zd) out of range",
+                 index);
+    return NULL;
+  }
+  if (AssignItem(self, index, NULL) < 0) {
+    return NULL;
+  }
+  return item;
+}
+
 // The private constructor of RepeatedScalarContainer objects.
 PyObject *NewContainer(
-    CMessage* parent, const google::protobuf::FieldDescriptor* parent_field_descriptor) {
+    CMessage* parent, const FieldDescriptor* parent_field_descriptor) {
   if (!CheckFieldBelongsToMessage(parent_field_descriptor, parent->message)) {
     return NULL;
   }
@@ -659,17 +688,16 @@ static int InitializeAndCopyToParentContainer(
   if (full_slice == NULL) {
     return -1;
   }
-  ScopedPyObjectPtr values(Subscript(from, full_slice));
+  ScopedPyObjectPtr values(Subscript(from, full_slice.get()));
   if (values == NULL) {
     return -1;
   }
-  google::protobuf::Message* new_message = global_message_factory->GetPrototype(
-      from->message->GetDescriptor())->New();
+  Message* new_message = from->message->New();
   to->parent = NULL;
   to->parent_field_descriptor = from->parent_field_descriptor;
   to->message = new_message;
   to->owner.reset(new_message);
-  if (InternalAssignRepeatedField(to, values) < 0) {
+  if (InternalAssignRepeatedField(to, values.get()) < 0) {
     return -1;
   }
   return 0;
@@ -729,6 +757,8 @@ static PyMethodDef Methods[] = {
     "Appends objects to the repeated container." },
   { "insert", (PyCFunction)Insert, METH_VARARGS,
     "Appends objects to the repeated container." },
+  { "pop", (PyCFunction)Pop, METH_VARARGS,
+    "Removes an object from the repeated container and returns it." },
   { "remove", (PyCFunction)Remove, METH_O,
     "Removes an object from the repeated container." },
   { "sort", (PyCFunction)Sort, METH_VARARGS | METH_KEYWORDS,
@@ -740,8 +770,7 @@ static PyMethodDef Methods[] = {
 
 PyTypeObject RepeatedScalarContainer_Type = {
   PyVarObject_HEAD_INIT(&PyType_Type, 0)
-  "google.protobuf.internal."
-  "cpp._message.RepeatedScalarContainer",  // tp_name
+  FULL_MODULE_NAME ".RepeatedScalarContainer",  // tp_name
   sizeof(RepeatedScalarContainer),     // tp_basicsize
   0,                                   //  tp_itemsize
   (destructor)repeated_scalar_container::Dealloc,  //  tp_dealloc
@@ -753,7 +782,7 @@ PyTypeObject RepeatedScalarContainer_Type = {
   0,                                   //  tp_as_number
   &repeated_scalar_container::SqMethods,   //  tp_as_sequence
   &repeated_scalar_container::MpMethods,   //  tp_as_mapping
-  0,                                   //  tp_hash
+  PyObject_HashNotImplemented,         //  tp_hash
   0,                                   //  tp_call
   0,                                   //  tp_str
   0,                                   //  tp_getattro
