@@ -265,6 +265,12 @@
       <Filter>js</Filter>
     </ClCompile>
     <ClCompile Include="..\src\google\protobuf\compiler\main.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\code_generator.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\command_line_interface.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\importer.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\parser.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\subprocess.cc" />
+    <ClCompile Include="..\src\google\protobuf\compiler\zip_writer.cc" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="cpp">
